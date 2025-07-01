@@ -49,7 +49,7 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
     }
   ];
 
-  const renderPost = (post: any) => {
+  const renderPost = (post: { id: number; title: string; content: string; author: string; inappropriate: boolean }) => {
     const shouldHide = removeEnabled && post.inappropriate;
     const shouldMosaic = mosaicEnabled && post.inappropriate && !removeEnabled;
 

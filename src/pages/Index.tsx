@@ -14,6 +14,7 @@ const Index = () => {
   const [showContentControls, setShowContentControls] = useState(false);
   const [showKeywordControls, setShowKeywordControls] = useState(false);
   const [personaIndex, setPersonaIndex] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [carouselApi, setCarouselApi] = useState<any>(null);
   const [filterKeywords, setFilterKeywords] = useState(['ad', 'news', 'shopping', 'wiki', 'lecture', 'video']);
 
