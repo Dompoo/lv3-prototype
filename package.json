@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && touch dist/.nojekyll && gh-pages -d dist"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
