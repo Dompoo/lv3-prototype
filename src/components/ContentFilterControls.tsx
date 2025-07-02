@@ -152,34 +152,42 @@ const ContentFilterControls: React.FC<ContentFilterControlsProps> = ({
           )}
         </div>
 
-        <div className="flex gap-3 justify-center">
-          {modes.map((mode) => {
-            const isActive = currentMode === mode.id;
-            const IconComponent = mode.icon;
-            
-            return (
-              <Tooltip key={mode.id}>
-                <TooltipTrigger asChild>
-                  <div
-                    className={`w-16 h-16 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-md flex items-center justify-center ${
-                      isActive 
-                        ? mode.id === 'original' ? 'bg-blue-500 border-blue-500' : mode.id === 'mosaic' ? 'bg-orange-500 border-orange-500' : 'bg-red-500 border-red-500'
-                        : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
-                    }`}
-                    onClick={() => handleModeChange(mode.id)}
-                  >
-                    <IconComponent className={`w-6 h-6 ${isActive ? 'text-white' : 'text-gray-600'}`} />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <div className="text-center">
-                    <p className="font-semibold">{mode.label}</p>
-                    <p className="text-sm mt-1">{mode.description}</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
+        {/* Filtering Options Section */}
+        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            필터링 옵션
+          </h3>
+          
+          <div className="flex gap-3 justify-center">
+            {modes.map((mode) => {
+              const isActive = currentMode === mode.id;
+              const IconComponent = mode.icon;
+              
+              return (
+                <Tooltip key={mode.id}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={`w-16 h-16 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-md flex items-center justify-center ${
+                        isActive 
+                          ? mode.id === 'original' ? 'bg-blue-500 border-blue-500' : mode.id === 'mosaic' ? 'bg-orange-500 border-orange-500' : 'bg-red-500 border-red-500'
+                          : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                      }`}
+                      onClick={() => handleModeChange(mode.id)}
+                    >
+                      <IconComponent className={`w-6 h-6 ${isActive ? 'text-white' : 'text-gray-600'}`} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-center">
+                      <p className="font-semibold">{mode.label}</p>
+                      <p className="text-sm mt-1">{mode.description}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
         </div>
 
       </div>

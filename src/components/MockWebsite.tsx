@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, ThumbsUp, Share2, Flag, User, Chrome, RefreshCw, ArrowLeft, ArrowRight, MoreHorizontal } from 'lucide-react';
+import { MessageCircle, ThumbsUp, Share2, Flag, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { analyzeContentWithGemini } from '@/lib/gemini';
 
@@ -88,7 +88,7 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
     };
 
     analyzeContent();
-  }, [filterKeywords]);
+  }, [filterKeywords, inappropriateContent]);
 
   const containsKeyword = (post: { id: number }) => {
     const isFiltered = filteredPostIds.includes(post.id);
@@ -148,6 +148,11 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <span className="font-semibold text-gray-800">{post.author}</span>
               <span className="text-sm text-gray-500">• 방금 전</span>
+              {hasFilterKeyword && !shouldMosaic && !shouldHide && (
+                <span className="bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded">
+                  키워드 발견
+                </span>
+              )}
             </div>
             <h3 className="font-bold text-lg mb-2 text-gray-900">{post.title}</h3>
             <p className="text-gray-700 mb-3">{post.content}</p>
@@ -221,163 +226,5 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
   );
 };
 
-// 1번 페르소나(가족/청소년/어린이 친화)용 목업 → 구글 검색 결과 스타일로 전면 수정
-export const MockWebsitePersona1: React.FC<MockWebsiteProps & { filterKeywords?: string[] }> = ({ mosaicEnabled, removeEnabled, filterKeywords }) => {
-  // 검색 결과 데이터 (위에서부터: 위키, 위키, 광고, 강의, 연예, 강의, 쇼핑, 영상)
-  const searchResults = [
-    {
-      id: 1,
-      type: 'wiki',
-      title: '인간 심리의 이해 - 나무위키',
-      url: 'https://namu.wiki/w/인간%20심리의%20이해',
-      snippet: '인간 심리의 다양한 측면과 심리학 이론, 실생활 적용 사례를 정리한 문서입니다.',
-      highlight: false
-    },
-    {
-      id: 2,
-      type: 'wiki',
-      title: '인간 심리의 이해 - 위키백과',
-      url: 'https://ko.wikipedia.org/wiki/인간_심리의_이해',
-      snippet: '심리학의 기본 개념과 인간 행동의 원인, 심리적 동기 등에 대해 설명합니다.',
-      highlight: false
-    },
-    {
-      id: 3,
-      type: 'ad',
-      title: '[광고] 인간 심리 분석 도서 베스트셀러 - 쿠팡',
-      url: 'https://www.coupang.com/psychology-books',
-      snippet: '인간 심리 관련 도서, 오늘 주문 내일 도착! 무료배송 특가.',
-      highlight: true
-    },
-    {
-      id: 4,
-      type: 'lecture',
-      title: '인간 심리의 이해를 위한 추천 강의',
-      url: 'https://www.edwith.org/psychology-course',
-      snippet: '무료로 수강 가능한 심리학 입문 강의 모음. 인간 심리의 기초부터 심화까지.',
-      highlight: false
-    },
-    {
-      id: 5,
-      type: 'news',
-      title: '[연예] 인간 심리와 관련된 스타들의 일화',
-      url: 'https://entertain.naver.com/read?oid=123&aid=456789',
-      snippet: '최근 한 예능에서 스타들이 밝힌 심리적 고민과 극복 사례가 화제입니다.',
-      highlight: true
-    },
-    {
-      id: 6,
-      type: 'lecture',
-      title: '심리학자들이 말하는 인간 심리의 핵심 강의',
-      url: 'https://www.psychologytoday.com/kr/blog/understanding-human-mind',
-      snippet: '심리학자들의 연구를 바탕으로 인간 심리의 핵심을 쉽게 설명하는 강의입니다.',
-      highlight: false
-    },
-    {
-      id: 7,
-      type: 'shopping',
-      title: '[쇼핑] 인간 심리 관련 굿즈 모음',
-      url: 'https://smartstore.naver.com/psychology-goods',
-      snippet: '심리학 명언 엽서, 마스코트 인형 등 다양한 굿즈를 만나보세요.',
-      highlight: true
-    },
-    {
-      id: 8,
-      type: 'video',
-      title: '인간 심리의 이해 - 유튜브 강연',
-      url: 'https://www.youtube.com/watch?v=abcd1234',
-      snippet: '전문가가 쉽게 설명하는 인간 심리의 이해. 영상으로 배우는 심리학.',
-      highlight: false
-    },
-  ];
-
-  // 필터링: 키워드가 해제된 경우 해당 type의 결과는 제거
-  const allowedTypes = filterKeywords ?? ['ad', 'news', 'shopping', 'wiki', 'lecture', 'video'];
-
-  return (
-    <div className="bg-gray-100">
-      {/* Browser Header - BrowserFrame과 동일한 스타일 적용 */}
-      <div className="bg-gray-200 px-4 py-3 flex items-center gap-3 border-b">
-        <div className="flex gap-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-        </div>
-        
-        <div className="flex items-center gap-2 text-gray-500">
-          <ArrowLeft className="w-4 h-4" />
-          <ArrowRight className="w-4 h-4" />
-          <RefreshCw className="w-4 h-4" />
-        </div>
-
-        <div className="flex-1 bg-white rounded-full px-4 py-2 flex items-center gap-2">
-          <Chrome className="w-4 h-4 text-gray-400" />
-          <span className="text-sm text-gray-600">https://search/인간-심리의-이해</span>
-        </div>
-
-        <MoreHorizontal className="w-4 h-4 text-gray-500" />
-      </div>
-
-      {/* Website Content */}
-      <div className="bg-white min-h-[600px] p-6">
-      {/* 구글 로고 */}
-      <div className="flex justify-center mt-3 mb-8">
-        <div className="text-6xl font-light tracking-tight">
-          <span className="text-blue-500">G</span>
-          <span className="text-red-500">o</span>
-          <span className="text-yellow-500">o</span>
-          <span className="text-blue-500">g</span>
-          <span className="text-green-500">l</span>
-          <span className="text-red-500">e</span>
-        </div>
-      </div>
-      {/* 검색창 */}
-      <div className="flex items-center gap-2 mb-6">
-        <input
-          className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
-          value="인간 심리의 이해"
-          readOnly
-        />
-        <button className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold shadow hover:bg-blue-700 transition">검색</button>
-      </div>
-      {/* 키워드 설정 안내 */}
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-sm text-gray-600">Cleen 카테고리 설정:</span>
-        {['ad', 'news', 'shopping', 'wiki', 'lecture', 'video'].map(k => (
-          <span
-            key={k}
-            className={`inline-block bg-blue-100 text-blue-700 rounded px-2 py-1 text-xs font-semibold mr-1 ${filterKeywords && !filterKeywords.includes(k) ? 'opacity-40 line-through' : ''}`}
-          >
-            {k === 'ad' ? '광고' : k === 'news' ? '연예' : k === 'shopping' ? '쇼핑' : k === 'wiki' ? '위키' : k === 'lecture' ? '강의' : '영상'}
-          </span>
-        ))}
-        <span className="ml-2 text-xs text-gray-400">(카테고리 설정 시 아래 결과에서 제거됨)</span>
-      </div>
-      {/* 검색 결과 */}
-      <div className="rounded-xl border border-gray-200 shadow p-6 space-y-6">
-        {searchResults.filter(r => allowedTypes.includes(r.type)).map(result => (
-          <div key={result.id} className="relative group">
-            <div className="block cursor-pointer">
-              <h3 className={
-                `text-lg font-semibold mb-1 ${result.highlight ? 'text-red-600' : 'text-blue-800'}`
-              }>
-                {result.title}
-                {result.type === 'ad' && <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded">광고</span>}
-                {result.type === 'news' && <span className="ml-2 text-xs bg-pink-100 text-pink-700 px-2 py-0.5 rounded">연예</span>}
-                {result.type === 'shopping' && <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">쇼핑</span>}
-                {result.type === 'wiki' && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">위키</span>}
-                {result.type === 'lecture' && <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">강의</span>}
-                {result.type === 'video' && <span className="ml-2 text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">영상</span>}
-              </h3>
-              <div className="text-sm text-gray-700 mb-1">{result.snippet}</div>
-              <div className="text-xs text-gray-500">{result.url}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      </div>
-    </div>
-  );
-};
 
 export default MockWebsite;
