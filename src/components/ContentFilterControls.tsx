@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Shield, Eye, Grid3X3, Trash2, Info } from 'lucide-react';
+import { Shield, Eye, Grid3X3, Trash2, Info, Plus, X } from 'lucide-react';
 
 interface ContentFilterControlsProps {
   mosaicEnabled: boolean;
   removeEnabled: boolean;
   onMosaicToggle: (enabled: boolean) => void;
   onRemoveToggle: (enabled: boolean) => void;
+  filterKeywords?: string[];
+  onFilterKeywordsChange?: (keywords: string[]) => void;
 }
 
 type FilterMode = 'original' | 'mosaic' | 'remove';
@@ -18,7 +21,10 @@ const ContentFilterControls: React.FC<ContentFilterControlsProps> = ({
   removeEnabled,
   onMosaicToggle,
   onRemoveToggle,
+  filterKeywords = [],
+  onFilterKeywordsChange,
 }) => {
+  const [newKeyword, setNewKeyword] = useState('');
   const getCurrentMode = (): FilterMode => {
     if (removeEnabled) return 'remove';
     if (mosaicEnabled) return 'mosaic';
@@ -43,6 +49,23 @@ const ContentFilterControls: React.FC<ContentFilterControlsProps> = ({
   };
 
   const currentMode = getCurrentMode();
+
+  const handleAddKeyword = () => {
+    if (newKeyword.trim() && !filterKeywords.includes(newKeyword.trim())) {
+      onFilterKeywordsChange?.([...filterKeywords, newKeyword.trim()]);
+      setNewKeyword('');
+    }
+  };
+
+  const handleRemoveKeyword = (keywordToRemove: string) => {
+    onFilterKeywordsChange?.(filterKeywords.filter(keyword => keyword !== keywordToRemove));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddKeyword();
+    }
+  };
 
   const modes = [
     {
@@ -76,83 +99,89 @@ const ContentFilterControls: React.FC<ContentFilterControlsProps> = ({
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Shield className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-semibold text-gray-800">자극성 필터링</h2>
+          <h2 className="text-xl font-semibold text-gray-800">키워드 필터링</h2>
           <Badge variant="secondary" className="ml-auto">
             데모 모드
           </Badge>
         </div>
 
-        <div className="space-y-3">
+        {/* Keyword Filter Section */}
+        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            필터링된 키워드
+          </h3>
+          
+          <div className="flex gap-2">
+            <Input
+              placeholder="키워드 추가"
+              value={newKeyword}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleAddKeyword}
+              size="sm"
+              disabled={!newKeyword.trim() || filterKeywords.includes(newKeyword.trim())}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {filterKeywords.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {filterKeywords.map((keyword) => (
+                <Badge 
+                  key={keyword} 
+                  variant="secondary" 
+                  className="flex items-center gap-1 px-2 py-1"
+                >
+                  {keyword}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-red-100"
+                    onClick={() => handleRemoveKeyword(keyword)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 justify-center">
           {modes.map((mode) => {
             const isActive = currentMode === mode.id;
             const IconComponent = mode.icon;
             
             return (
-              <div
-                key={mode.id}
-                className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 cursor-pointer hover:shadow-md ${
-                  isActive ? mode.activeColor : `bg-gradient-to-r ${mode.color}`
-                }`}
-                onClick={() => handleModeChange(mode.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    isActive 
-                      ? mode.id === 'original' ? 'bg-blue-500' : mode.id === 'mosaic' ? 'bg-orange-500' : 'bg-red-500'
-                      : 'bg-gray-400'
-                  }`}>
-                    <IconComponent className="w-5 h-5 text-white" />
+              <Tooltip key={mode.id}>
+                <TooltipTrigger asChild>
+                  <div
+                    className={`w-16 h-16 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-md flex items-center justify-center ${
+                      isActive 
+                        ? mode.id === 'original' ? 'bg-blue-500 border-blue-500' : mode.id === 'mosaic' ? 'bg-orange-500 border-orange-500' : 'bg-red-500 border-red-500'
+                        : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                    }`}
+                    onClick={() => handleModeChange(mode.id)}
+                  >
+                    <IconComponent className={`w-6 h-6 ${isActive ? 'text-white' : 'text-gray-600'}`} />
                   </div>
-                  <div>
-                    <h3 className={`font-semibold ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>
-                      {mode.label}
-                    </h3>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-center">
+                    <p className="font-semibold">{mode.label}</p>
+                    <p className="text-sm mt-1">{mode.description}</p>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-white/50"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Info className="w-4 h-4 text-gray-500" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>{mode.description}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  
-                  <div className={`w-4 h-4 rounded-full border-2 ${
-                    isActive 
-                      ? mode.id === 'original' ? 'bg-blue-500 border-blue-500' : mode.id === 'mosaic' ? 'bg-orange-500 border-orange-500' : 'bg-red-500 border-red-500'
-                      : 'bg-white border-gray-300'
-                  }`}>
-                    {isActive && (
-                      <div className="w-full h-full rounded-full bg-white/30" />
-                    )}
-                  </div>
-                </div>
-              </div>
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
 
-        {/* Status */}
-        <div className="flex items-center justify-center gap-4 p-3 bg-gray-50 rounded-lg">
-          <Eye className="w-4 h-4 text-gray-500" />
-          <span className="text-sm text-gray-600">
-            현재 상태: {
-              currentMode === 'remove' ? '완전 제거 모드' : 
-              currentMode === 'mosaic' ? '모자이크 모드' : 
-              '원본 모드'
-            }
-          </span>
-        </div>
       </div>
     </TooltipProvider>
   );

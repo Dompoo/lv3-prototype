@@ -5,53 +5,63 @@ import { cn } from '@/lib/utils';
 interface MockWebsiteProps {
   mosaicEnabled: boolean;
   removeEnabled: boolean;
+  filterKeywords?: string[];
 }
 
 const MockWebsite: React.FC<MockWebsiteProps> = ({
   mosaicEnabled,
   removeEnabled,
+  filterKeywords = [],
 }) => {
   const inappropriateContent = [
     {
       id: 1,
-      title: "🔥 충격적인 내용이 포함된 게시물",
-      content: "이것은 부적절한 언어와 자극적인 내용이 포함된 샘플 게시물입니다. 실제로는 욕설이나 비방 내용이 포함될 수 있습니다.",
-      author: "익명사용자123",
-      inappropriate: true
+      title: "트페 이번 패치 뭐임?",
+      content: "ㅅㅂ 도파 입꼬리 올라가는게 보인다",
+      author: "범부"
     },
     {
       id: 2,
-      title: "게임 메타 정보 - 최신 패치 분석",
-      content: "이번 패치에서 변경된 챔피언들의 밸런스 변화에 대해 분석해보겠습니다. 정글러들의 루트가 크게 바뀌었네요.",
-      author: "게임전문가",
-      inappropriate: false
+      title: "롤 27.0.1 패치 요약",
+      content: "트페 궁 사거리 상향, 바루스 Q,W 데미지 너프, 그웬 W 크기 너프, 갱플 귤로 모데 궁 나올 수 있음, 신챔 유나리 추가, 칼바람 리메이크",
+      author: "ㅇㅇ"
     },
     {
       id: 3,
-      title: "⚠️ 논란의 여지가 있는 글",
-      content: "이 게시물은 논란이 될 수 있는 내용을 포함하고 있습니다. 모욕적인 표현이나 부적절한 이미지가 포함될 수 있습니다.",
-      author: "논란제조기",
-      inappropriate: true
+      title: "페이커 논란",
+      content: "페이커 요즘 살찐거봄? 내부자 고발로는 15킬로 쪘다는데 볼살 통통해진거보니까 진짜긴 한듯?",
+      author: "고닉학살자"
     },
     {
       id: 4,
-      title: "초보자를 위한 게임 가이드",
-      content: "처음 시작하는 분들을 위한 기본적인 게임 플레이 팁을 정리해보았습니다. 단계별로 따라하시면 쉽게 이해할 수 있을 거예요.",
-      author: "친절한가이드",
-      inappropriate: false
+      title: "롤 처음이면 이글부터 봐라",
+      content: "일단 CS 먹는것부터 연습해야 함. 브론즈 게임이나 치고받고 싸우지 천상계 게임 한번만 보면 걍 파밍 싸움이란거 알 수 있음. 연습 모드 켜서 3시간 동안 CS만 먹으셈",
+      author: "이글"
     },
     {
       id: 5,
-      title: "🚨 극도로 자극적인 내용 주의",
-      content: "이 글은 매우 자극적이고 불쾌감을 줄 수 있는 내용을 담고 있습니다. 혐오 표현이나 부적절한 내용이 포함되어 있을 수 있습니다.",
-      author: "문제사용자",
-      inappropriate: true
+      title: "[후방주의] 19금 성인 웹툰 추천",
+      content: "성인 대상 웹툰 중에서 스토리가 좋은 작품들을 정리해봤습니다. 7번 작품이 진짜 ㄹㅇ 개쩜",
+      author: "ㅇㅇ"
+    },
+    {
+      id: 6,
+      title: "커뮤니티 공지사항",
+      content: "최근 욕설이나 혐오 표현을 사용하는 회원들이 늘어나고 있어 제재를 강화하기로 했습니다. 모든 회원분들께서 건전한 토론 문화 정착에 협조해주시기 바랍니다.",
+      author: "관리자"
     }
   ];
 
-  const renderPost = (post: { id: number; title: string; content: string; author: string; inappropriate: boolean }) => {
-    const shouldHide = removeEnabled && post.inappropriate;
-    const shouldMosaic = mosaicEnabled && post.inappropriate && !removeEnabled;
+  const containsKeyword = (post: { title: string; content: string }) => {
+    if (filterKeywords.length === 0) return false;
+    const text = `${post.title} ${post.content}`.toLowerCase();
+    return filterKeywords.some(keyword => text.includes(keyword.toLowerCase()));
+  };
+
+  const renderPost = (post: { id: number; title: string; content: string; author: string }) => {
+    const hasFilterKeyword = containsKeyword(post);
+    const shouldHide = removeEnabled && hasFilterKeyword;
+    const shouldMosaic = mosaicEnabled && hasFilterKeyword && !removeEnabled;
 
     if (shouldHide) {
       return null;
@@ -69,7 +79,7 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
           <div className="absolute inset-0 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
             <div className="text-white text-center space-y-2">
               <Flag className="w-8 h-8 mx-auto" />
-              <p className="font-semibold">부적절한 콘텐츠</p>
+              <p className="font-semibold">필터링된 키워드</p>
               <p className="text-sm opacity-75">모자이크 처리됨</p>
             </div>
           </div>
@@ -83,9 +93,9 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <span className="font-semibold text-gray-800">{post.author}</span>
               <span className="text-sm text-gray-500">• 방금 전</span>
-              {post.inappropriate && !shouldMosaic && (
-                <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
-                  자극적 콘텐츠
+              {hasFilterKeyword && !shouldMosaic && (
+                <span className="bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded">
+                  키워드 감지
                 </span>
               )}
             </div>
@@ -111,9 +121,10 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
     );
   };
 
-  const visiblePosts = inappropriateContent.filter(post => 
-    !(removeEnabled && post.inappropriate)
-  );
+  const visiblePosts = inappropriateContent.filter(post => {
+    const hasFilterKeyword = containsKeyword(post);
+    return !(removeEnabled && hasFilterKeyword);
+  });
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -124,18 +135,18 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
       </div>
 
       {/* Filter Status */}
-      {(mosaicEnabled || removeEnabled) && (
+      {filterKeywords.length > 0 && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2">
             <Flag className="w-5 h-5 text-blue-600" />
             <span className="font-semibold text-blue-800">Cleen 필터 활성화</span>
           </div>
-          <p className="text-sm text-blue-700 mt-1">
-            {removeEnabled 
-              ? "부적절한 콘텐츠가 완전히 제거되었습니다" 
-              : "부적절한 콘텐츠가 모자이크 처리되었습니다"
-            }
-          </p>
+          <div className="text-sm text-blue-700 mt-1">
+            <p>
+              키워드 필터 적용: {filterKeywords.join(', ')} 
+              {removeEnabled ? ' (제거됨)' : mosaicEnabled ? ' (모자이크 처리됨)' : ''}
+            </p>
+          </div>
         </div>
       )}
 
@@ -147,10 +158,10 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
           <div className="text-center py-12">
             <Flag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-600 mb-2">
-              모든 부적절한 콘텐츠가 제거되었습니다
+              모든 키워드 관련 콘텐츠가 제거되었습니다
             </h3>
             <p className="text-gray-500">
-              안전한 콘텐츠만 표시됩니다
+              필터링된 콘텐츠만 표시됩니다
             </p>
           </div>
         )}

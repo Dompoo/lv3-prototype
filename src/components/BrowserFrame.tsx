@@ -6,11 +6,13 @@ import { Chrome, RefreshCw, ArrowLeft, ArrowRight, MoreHorizontal } from 'lucide
 interface BrowserFrameProps {
   mosaicEnabled: boolean;
   removeEnabled: boolean;
+  filterKeywords?: string[];
 }
 
 const BrowserFrame: React.FC<BrowserFrameProps> = ({
   mosaicEnabled,
   removeEnabled,
+  filterKeywords = [],
 }) => {
   return (
     <div className="bg-gray-100">
@@ -41,6 +43,7 @@ const BrowserFrame: React.FC<BrowserFrameProps> = ({
         <MockWebsite
           mosaicEnabled={mosaicEnabled}
           removeEnabled={removeEnabled}
+          filterKeywords={filterKeywords}
         />
       </div>
     </div>

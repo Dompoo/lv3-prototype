@@ -17,11 +17,12 @@ const Index = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [carouselApi, setCarouselApi] = useState<any>(null);
   const [filterKeywords, setFilterKeywords] = useState(['ad', 'news', 'shopping', 'wiki', 'lecture', 'video']);
+  const [contentFilterKeywords, setContentFilterKeywords] = useState<string[]>(['욕설', '논란', '19금']);
 
   const personaData = [
     {
       description: '웹 콘텐츠의 부적절한 요소를 자동으로 필터링하여 안전한 브라우징 환경을 제공합니다',
-      component: <BrowserFrame mosaicEnabled={mosaicEnabled} removeEnabled={removeEnabled} />,
+      component: <BrowserFrame mosaicEnabled={mosaicEnabled} removeEnabled={removeEnabled} filterKeywords={contentFilterKeywords} />,
     },
     {
       description: '카테고리를 기반으로 정확한 브라우징 환경을 제공합니다',
@@ -101,7 +102,7 @@ const Index = () => {
                     style={{ minWidth: 160 }}
                   >
                     <Settings className="w-6 h-6" />
-                    자극성 필터링
+                    키워드 필터링
                   </Button>
                   {showContentControls && (
                     <div className="mt-2 w-[333px]">
@@ -111,6 +112,8 @@ const Index = () => {
                           removeEnabled={removeEnabled}
                           onMosaicToggle={setMosaicEnabled}
                           onRemoveToggle={setRemoveEnabled}
+                          filterKeywords={contentFilterKeywords}
+                          onFilterKeywordsChange={setContentFilterKeywords}
                         />
                       </Card>
                     </div>
