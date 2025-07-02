@@ -79,7 +79,14 @@ ${posts.map(post => `ID: ${post.id}
     return ids;
   } catch (error) {
     console.error('Gemini API 호출 중 오류:', error);
+    
+    // Rate limit 오류인지 확인
+    if (error.message && error.message.includes('429')) {
+      console.warn('⚠️ API 요청 제한에 걸렸습니다. 잠시 후 다시 시도해주세요.');
+    }
+    
     // Gemini API 호출 실패 시 기본 키워드 매칭으로 fallback
+    console.log('🔄 기본 키워드 매칭으로 fallback 실행');
     return posts
       .filter(post => {
         const text = `${post.title} ${post.content}`.toLowerCase();

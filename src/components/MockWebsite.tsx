@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, ThumbsUp, Share2, Flag, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { analyzeContentWithGemini } from '@/lib/gemini';
@@ -60,8 +60,22 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
     }
   ];
 
+  // 이전 키워드를 추적하기 위한 ref
+  const prevKeywordsRef = useRef<string[]>([]);
+  
   // Gemini API를 사용해서 키워드와 관련된 게시물 ID들을 가져옴
   useEffect(() => {
+    // 키워드가 실제로 변경되었는지 확인
+    const keywordsChanged = JSON.stringify(filterKeywords) !== JSON.stringify(prevKeywordsRef.current);
+    
+    if (!keywordsChanged) {
+      console.log('🔍 키워드 변경 없음, API 호출 스킵');
+      return;
+    }
+    
+    // 현재 키워드를 저장
+    prevKeywordsRef.current = [...filterKeywords];
+    
     const analyzeContent = async () => {
       if (filterKeywords.length === 0) {
         console.log('🔍 필터 키워드가 없어서 분석을 건너뜁니다.');
@@ -83,12 +97,22 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
         setFilteredPostIds(ids);
       } catch (error) {
         console.error('❌ 콘텐츠 분석 실패:', error);
-        setFilteredPostIds([]);
+        // API 제한 오류 시 fallback으로 기본 키워드 매칭 사용
+        const fallbackIds = inappropriateContent
+          .filter(post => {
+            const text = `${post.title} ${post.content}`.toLowerCase();
+            return filterKeywords.some(keyword => text.includes(keyword.toLowerCase()));
+          })
+          .map(post => post.id);
+        console.log('🔄 Fallback 키워드 매칭 결과:', fallbackIds);
+        setFilteredPostIds(fallbackIds);
       }
     };
 
-    analyzeContent();
-  }, [filterKeywords, inappropriateContent]);
+    // Debounce: 500ms 지연 후 API 호출
+    const timeoutId = setTimeout(analyzeContent, 500);
+    return () => clearTimeout(timeoutId);
+  }, [filterKeywords]);
 
   const containsKeyword = (post: { id: number }) => {
     const isFiltered = filteredPostIds.includes(post.id);
