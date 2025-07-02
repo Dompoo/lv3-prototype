@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Cleen** is a Korean web content filtering service prototype built as a React-based demonstration application. The project showcases a web guardian system that can filter, blur, or remove inappropriate content from web pages.
+**Cleen** is a Korean web content filtering service prototype built as a React-based demonstration application. The project showcases an AI-powered web guardian system that can intelligently filter, blur, or remove inappropriate content from web pages using Google Gemini AI.
 
 ## Development Commands
 
@@ -24,7 +24,8 @@ Currently no test framework is configured in this codebase.
 
 ### Tech Stack
 - **Frontend**: React 18.3.1 + TypeScript + Vite + SWC
-- **Styling**: Tailwind CSS with shadcn/ui component library (40+ components)
+- **AI Integration**: Google Gemini AI for intelligent content analysis
+- **Styling**: Tailwind CSS with shadcn/ui component library
 - **State Management**: Local React hooks (no global state)
 - **Routing**: React Router DOM
 - **Data Fetching**: TanStack React Query
@@ -33,26 +34,45 @@ Currently no test framework is configured in this codebase.
 ### Key Directories
 ```
 src/
-├── components/ui/          # shadcn/ui components (Button, Card, Dialog, etc.)
-├── components/            # Feature components (BrowserFrame, FilterControls, MockWebsite)
+├── components/ui/          # shadcn/ui components (Button, Card, Input, etc.)
+├── components/            # Feature components (BrowserFrame, ContentFilterControls, MockWebsite)
 ├── pages/                # Route components (Index, NotFound)
-├── hooks/                # Custom React hooks
-└── lib/                  # Utility functions
+├── lib/                  # Utility functions and API clients (gemini.ts)
+└── hooks/                # Custom React hooks
 ```
 
-### Filtering System Architecture
-The application demonstrates three content filtering modes:
-- **Original Mode**: Display content as-is
-- **Mosaic Mode**: Blur inappropriate content
+### AI-Powered Filtering System
+The application uses Google Gemini AI to intelligently analyze content and supports three filtering modes:
+- **Original Mode**: Display content as-is with "키워드 발견" tags for detected content
+- **Mosaic Mode**: Blur inappropriate content with overlay
 - **Remove Mode**: Hide inappropriate content completely
 
-### Component Patterns
-- **Compound Components**: FilterControls combines multiple filtering options
-- **Prop Interfaces**: Strong TypeScript interfaces throughout
-- **Presentation Layer**: Pure components with separated business logic
-- **Mock Data**: Hardcoded content for demonstration purposes
+#### AI Analysis Process
+1. User sets custom keywords (e.g., "욕설", "논란", "19금")
+2. Gemini AI analyzes all posts for semantic matches with keywords
+3. Returns filtered post IDs for intelligent content detection
+4. Fallback to simple text matching if API fails
 
-## Configuration Details
+### Component Architecture
+- **Single Page Application**: Simplified from multi-page to focused demo
+- **BrowserFrame**: Main container simulating web browser
+- **MockWebsite**: Community board with sample posts for demonstration
+- **ContentFilterControls**: Keyword management and filtering mode selection
+- **AI Integration**: Real-time content analysis with Google Gemini
+
+## Environment Configuration
+
+### Environment Variables
+```bash
+# Required: Gemini AI API Key
+VITE_GEMINI_API_KEY=your_api_key_here
+```
+
+### API Key Management
+- Create `.env.local` file with your Gemini API key
+- Never commit API keys to repository
+- Use `.env.example` as template for other developers
+- Get API key from: https://makersuite.google.com/app/apikey
 
 ### Import Aliases
 - Use `@/*` for `./src/*` imports (configured in vite.config.ts and tsconfig.json)
@@ -66,6 +86,20 @@ The application demonstrates three content filtering modes:
 - Configured for shadcn/ui component integration
 - Extended color palette and animations
 
+## AI Integration Details
+
+### Gemini AI Model
+- **Model**: `gemini-2.0-flash-exp` (latest experimental model)
+- **Purpose**: Semantic content analysis for intelligent filtering
+- **Input**: Posts content + user-defined keywords
+- **Output**: Array of post IDs that match filtering criteria
+
+### Content Analysis Logic
+- Analyzes title, content, and author information
+- Supports semantic matching (e.g., "욕설" keyword detects "ㅅㅂ" expressions)
+- Handles Korean language nuances and slang
+- Provides fallback to simple text matching for reliability
+
 ## Platform Integration
 
 This project is integrated with Lovable.dev platform:
@@ -75,5 +109,6 @@ This project is integrated with Lovable.dev platform:
 ## Language & Content
 
 - **UI Language**: All interface text is in Korean
-- **Target Market**: Korean web users (parents, presenters, gamers)
-- **Demo Content**: Contains both appropriate and inappropriate content for filtering demonstration
+- **Target Market**: Korean web users (parents, educators, content moderators)
+- **Demo Content**: Community board posts with various content types for filtering demonstration
+- **AI-Powered**: Intelligent Korean content analysis using Google Gemini AI
