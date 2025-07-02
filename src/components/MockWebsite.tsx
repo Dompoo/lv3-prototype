@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, ThumbsUp, Share2, Flag, User, Chrome, RefreshCw, ArrowLeft, ArrowRight, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { analyzeContentWithGemini } from '@/lib/gemini';
 
 interface MockWebsiteProps {
   mosaicEnabled: boolean;
@@ -13,6 +14,13 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
   removeEnabled,
   filterKeywords = [],
 }) => {
+  const [filteredPostIds, setFilteredPostIds] = useState<number[]>([]);
+  
+  // filteredPostIds 상태 변화 추적
+  useEffect(() => {
+    console.log('📋 필터링된 게시물 ID 목록 업데이트:', filteredPostIds);
+  }, [filteredPostIds]);
+  
   const inappropriateContent = [
     {
       id: 1,
@@ -52,10 +60,44 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
     }
   ];
 
-  const containsKeyword = (post: { title: string; content: string }) => {
-    if (filterKeywords.length === 0) return false;
-    const text = `${post.title} ${post.content}`.toLowerCase();
-    return filterKeywords.some(keyword => text.includes(keyword.toLowerCase()));
+  // Gemini API를 사용해서 키워드와 관련된 게시물 ID들을 가져옴
+  useEffect(() => {
+    const analyzeContent = async () => {
+      if (filterKeywords.length === 0) {
+        console.log('🔍 필터 키워드가 없어서 분석을 건너뜁니다.');
+        setFilteredPostIds([]);
+        return;
+      }
+
+      console.log('🚀 Gemini API 분석 시작:', { 
+        keywords: filterKeywords,
+        posts: inappropriateContent.map(p => ({ id: p.id, title: p.title }))
+      });
+
+      try {
+        const ids = await analyzeContentWithGemini(inappropriateContent, filterKeywords);
+        console.log('✅ Gemini API 응답 성공:', { 
+          filteredIds: ids,
+          totalPosts: inappropriateContent.length 
+        });
+        setFilteredPostIds(ids);
+      } catch (error) {
+        console.error('❌ 콘텐츠 분석 실패:', error);
+        setFilteredPostIds([]);
+      }
+    };
+
+    analyzeContent();
+  }, [filterKeywords]);
+
+  const containsKeyword = (post: { id: number }) => {
+    const isFiltered = filteredPostIds.includes(post.id);
+    console.log(`🔍 게시물 ${post.id} 필터링 체크:`, { 
+      postId: post.id, 
+      filteredPostIds, 
+      isFiltered 
+    });
+    return isFiltered;
   };
 
   const renderPost = (post: { id: number; title: string; content: string; author: string }) => {
@@ -63,7 +105,17 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
     const shouldHide = removeEnabled && hasFilterKeyword;
     const shouldMosaic = mosaicEnabled && hasFilterKeyword && !removeEnabled;
 
+    console.log(`🎭 게시물 ${post.id} 렌더링 결정:`, {
+      postId: post.id,
+      hasFilterKeyword,
+      removeEnabled,
+      mosaicEnabled,
+      shouldHide,
+      shouldMosaic
+    });
+
     if (shouldHide) {
+      console.log(`🚫 게시물 ${post.id} 숨김처리`);
       return null;
     }
 
@@ -76,13 +128,16 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
         )}
       >
         {shouldMosaic && (
-          <div className="absolute inset-0 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
-            <div className="text-white text-center space-y-2">
-              <Flag className="w-8 h-8 mx-auto" />
-              <p className="font-semibold">필터링된 키워드</p>
-              <p className="text-sm opacity-75">모자이크 처리됨</p>
+          <>
+            {console.log(`🌫️ 게시물 ${post.id} 모자이크 처리 적용`)}
+            <div className="absolute inset-0 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+              <div className="text-white text-center space-y-2">
+                <Flag className="w-8 h-8 mx-auto" />
+                <p className="font-semibold">필터링된 키워드</p>
+                <p className="text-sm opacity-75">모자이크 처리됨</p>
+              </div>
             </div>
-          </div>
+          </>
         )}
         
         <div className="flex items-start gap-3">
@@ -93,11 +148,6 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <span className="font-semibold text-gray-800">{post.author}</span>
               <span className="text-sm text-gray-500">• 방금 전</span>
-              {hasFilterKeyword && !shouldMosaic && (
-                <span className="bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded">
-                  키워드 감지
-                </span>
-              )}
             </div>
             <h3 className="font-bold text-lg mb-2 text-gray-900">{post.title}</h3>
             <p className="text-gray-700 mb-3">{post.content}</p>
