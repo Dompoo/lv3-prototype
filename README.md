@@ -2,7 +2,7 @@
 
 웹 콘텐츠의 부적절한 요소를 자동으로 필터링하여 안전한 브라우징 환경을 제공하는 서비스입니다.
 
-[배포주소](https://meek-bonbon-f10178.netlify.app/)
+[배포주소](https://thunderous-llama-a8ec52.netlify.app/)
 
 ## 서비스 개요
 
