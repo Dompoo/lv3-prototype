@@ -2,24 +2,31 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, ThumbsUp, Share2, Flag, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { analyzeContentWithGemini } from '@/lib/gemini';
+import { SensitivityLevel } from './ContentFilterControls';
 
 interface MockWebsiteProps {
+  filterEnabled: boolean;
   mosaicEnabled: boolean;
   removeEnabled: boolean;
+  purifyEnabled: boolean;
   filterKeywords?: string[];
+  sensitivityLevel?: SensitivityLevel;
 }
 
 const MockWebsite: React.FC<MockWebsiteProps> = ({
+  filterEnabled,
   mosaicEnabled,
   removeEnabled,
+  purifyEnabled,
   filterKeywords = [],
+  sensitivityLevel = 2,
 }) => {
   const [filteredPostIds, setFilteredPostIds] = useState<number[]>([]);
+  const [purifyData, setPurifyData] = useState<{ [postId: number]: string[] }>({});
   
   // filteredPostIds 상태 변화 추적
   useEffect(() => {
-    console.log('📋 필터링된 게시물 ID 목록 업데이트:', filteredPostIds);
-  }, [filteredPostIds]);
+  }, [filteredPostIds, purifyData]);
   
   const inappropriateContent = [
     {
@@ -60,88 +67,140 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
     }
   ];
 
-  // 이전 키워드를 추적하기 위한 ref
+  // 이전 키워드, 민감도, 필터 활성화 상태를 추적하기 위한 ref
   const prevKeywordsRef = useRef<string[]>([]);
+  const prevSensitivityRef = useRef<SensitivityLevel>(2);
+  const prevFilterEnabledRef = useRef<boolean>(false);
+  const prevPurifyEnabledRef = useRef<boolean>(false);
   
   // Gemini API를 사용해서 키워드와 관련된 게시물 ID들을 가져옴
   useEffect(() => {
-    // 키워드가 실제로 변경되었는지 확인
+    // 키워드, 민감도, 필터 상태가 실제로 변경되었는지 확인
     const keywordsChanged = JSON.stringify(filterKeywords) !== JSON.stringify(prevKeywordsRef.current);
+    const sensitivityChanged = sensitivityLevel !== prevSensitivityRef.current;
+    const filterEnabledChanged = filterEnabled !== prevFilterEnabledRef.current;
+    const purifyEnabledChanged = purifyEnabled !== prevPurifyEnabledRef.current;
     
-    if (!keywordsChanged) {
-      console.log('🔍 키워드 변경 없음, API 호출 스킵');
+    if (!keywordsChanged && !sensitivityChanged && !filterEnabledChanged && !purifyEnabledChanged) {
       return;
     }
     
-    // 현재 키워드를 저장
+    // 현재 상태를 저장
     prevKeywordsRef.current = [...filterKeywords];
+    prevSensitivityRef.current = sensitivityLevel;
+    prevFilterEnabledRef.current = filterEnabled;
+    prevPurifyEnabledRef.current = purifyEnabled;
     
     const analyzeContent = async () => {
-      if (filterKeywords.length === 0) {
-        console.log('🔍 필터 키워드가 없어서 분석을 건너뜁니다.');
+      if (!filterEnabled || filterKeywords.length === 0) {
         setFilteredPostIds([]);
         return;
       }
 
       console.log('🚀 Gemini API 분석 시작:', { 
         keywords: filterKeywords,
+        sensitivityLevel,
+        purifyMode: purifyEnabled,
         posts: inappropriateContent.map(p => ({ id: p.id, title: p.title }))
       });
 
       try {
-        const ids = await analyzeContentWithGemini(inappropriateContent, filterKeywords);
+        const result = await analyzeContentWithGemini(inappropriateContent, filterKeywords, sensitivityLevel, purifyEnabled);
         console.log('✅ Gemini API 응답 성공:', { 
-          filteredIds: ids,
-          totalPosts: inappropriateContent.length 
+          filteredIds: result.filteredPostIds,
+          purifyData: result.purifyData,
+          totalPosts: inappropriateContent.length,
+          sensitivityLevel 
         });
-        setFilteredPostIds(ids);
+        setFilteredPostIds(result.filteredPostIds);
+        setPurifyData(result.purifyData || {});
       } catch (error) {
         console.error('❌ 콘텐츠 분석 실패:', error);
         // API 제한 오류 시 fallback으로 기본 키워드 매칭 사용
+        const fallbackPurifyData: { [postId: number]: string[] } = {};
         const fallbackIds = inappropriateContent
           .filter(post => {
             const text = `${post.title} ${post.content}`.toLowerCase();
-            return filterKeywords.some(keyword => text.includes(keyword.toLowerCase()));
+            const foundKeywords: string[] = [];
+            
+            const hasKeyword = filterKeywords.some(keyword => {
+              const lowerKeyword = keyword.toLowerCase();
+              if (sensitivityLevel === 1) {
+                // 정확한 키워드 일치만
+                if (text.includes(lowerKeyword)) {
+                  foundKeywords.push(keyword);
+                  return true;
+                }
+              } else {
+                // 모든 레벨에서 기본적으로 키워드 포함 검사
+                if (text.includes(lowerKeyword)) {
+                  foundKeywords.push(keyword);
+                  return true;
+                }
+              }
+              return false;
+            });
+            
+            if (hasKeyword && purifyEnabled) {
+              // 순화 모드에서는 실제로 발견된 키워드들을 저장
+              const actualFoundWords: string[] = [];
+              foundKeywords.forEach(keyword => {
+                const regex = new RegExp(keyword, 'gi');
+                const titleMatches = post.title.match(regex);
+                const contentMatches = post.content.match(regex);
+                if (titleMatches) actualFoundWords.push(...titleMatches);
+                if (contentMatches) actualFoundWords.push(...contentMatches);
+              });
+              if (actualFoundWords.length > 0) {
+                fallbackPurifyData[post.id] = actualFoundWords;
+              }
+            }
+            
+            return hasKeyword;
           })
           .map(post => post.id);
-        console.log('🔄 Fallback 키워드 매칭 결과:', fallbackIds);
         setFilteredPostIds(fallbackIds);
+        setPurifyData(fallbackPurifyData);
       }
     };
 
     // Debounce: 500ms 지연 후 API 호출
     const timeoutId = setTimeout(analyzeContent, 500);
     return () => clearTimeout(timeoutId);
-  }, [filterKeywords]);
+  }, [filterEnabled, filterKeywords, sensitivityLevel, purifyEnabled]);
 
   const containsKeyword = (post: { id: number }) => {
     const isFiltered = filteredPostIds.includes(post.id);
-    console.log(`🔍 게시물 ${post.id} 필터링 체크:`, { 
-      postId: post.id, 
-      filteredPostIds, 
-      isFiltered 
-    });
     return isFiltered;
   };
 
-  const renderPost = (post: { id: number; title: string; content: string; author: string }) => {
-    const hasFilterKeyword = containsKeyword(post);
-    const shouldHide = removeEnabled && hasFilterKeyword;
-    const shouldMosaic = mosaicEnabled && hasFilterKeyword && !removeEnabled;
-
-    console.log(`🎭 게시물 ${post.id} 렌더링 결정:`, {
-      postId: post.id,
-      hasFilterKeyword,
-      removeEnabled,
-      mosaicEnabled,
-      shouldHide,
-      shouldMosaic
+  // 텍스트에서 특정 문자열들을 모자이크 처리하는 함수
+  const purifyText = (text: string, targetWords: string[]) => {
+    let processedText = text;
+    targetWords.forEach(word => {
+      const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      processedText = processedText.replace(regex, (match) => 
+        `<span style="background: repeating-linear-gradient(45deg, #333, #333 2px, #666 2px, #666 4px); color: transparent; user-select: none;">${'█'.repeat(match.length)}</span>`
+      );
     });
+    return processedText;
+  };
+
+  const renderPost = (post: { id: number; title: string; content: string; author: string }) => {
+    const hasFilterKeyword = filterEnabled && containsKeyword(post);
+    const shouldHide = filterEnabled && removeEnabled && hasFilterKeyword;
+    const shouldMosaic = filterEnabled && mosaicEnabled && hasFilterKeyword && !removeEnabled && !purifyEnabled;
+    const shouldPurify = filterEnabled && purifyEnabled && hasFilterKeyword;
 
     if (shouldHide) {
-      console.log(`🚫 게시물 ${post.id} 숨김처리`);
       return null;
     }
+
+    // 순화 모드에서 사용할 처리된 텍스트
+    const purifiedTitle = shouldPurify && purifyData[post.id] ? 
+      purifyText(post.title, purifyData[post.id]) : post.title;
+    const purifiedContent = shouldPurify && purifyData[post.id] ? 
+      purifyText(post.content, purifyData[post.id]) : post.content;
 
     return (
       <div
@@ -153,7 +212,6 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
       >
         {shouldMosaic && (
           <>
-            {console.log(`🌫️ 게시물 ${post.id} 모자이크 처리 적용`)}
             <div className="absolute inset-0 bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
               <div className="text-white text-center space-y-2">
                 <Flag className="w-8 h-8 mx-auto" />
@@ -178,8 +236,20 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
                 </span>
               )}
             </div>
-            <h3 className="font-bold text-lg mb-2 text-gray-900">{post.title}</h3>
-            <p className="text-gray-700 mb-3">{post.content}</p>
+            <h3 className="font-bold text-lg mb-2 text-gray-900">
+              {shouldPurify ? (
+                <span dangerouslySetInnerHTML={{ __html: purifiedTitle }} />
+              ) : (
+                post.title
+              )}
+            </h3>
+            <p className="text-gray-700 mb-3">
+              {shouldPurify ? (
+                <span dangerouslySetInnerHTML={{ __html: purifiedContent }} />
+              ) : (
+                post.content
+              )}
+            </p>
             <div className="flex items-center gap-4 text-gray-500">
               <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
                 <ThumbsUp className="w-4 h-4" />
@@ -201,8 +271,8 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
   };
 
   const visiblePosts = inappropriateContent.filter(post => {
-    const hasFilterKeyword = containsKeyword(post);
-    return !(removeEnabled && hasFilterKeyword);
+    const hasFilterKeyword = filterEnabled && containsKeyword(post);
+    return !(filterEnabled && removeEnabled && hasFilterKeyword);
   });
 
   return (
@@ -214,7 +284,7 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
       </div>
 
       {/* Filter Status */}
-      {filterKeywords.length > 0 && (
+      {filterEnabled && filterKeywords.length > 0 && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2">
             <Flag className="w-5 h-5 text-blue-600" />
@@ -223,8 +293,9 @@ const MockWebsite: React.FC<MockWebsiteProps> = ({
           <div className="text-sm text-blue-700 mt-1">
             <p>
               키워드 필터 적용: {filterKeywords.join(', ')} 
-              {removeEnabled ? ' (제거됨)' : mosaicEnabled ? ' (모자이크 처리됨)' : ''}
+              {removeEnabled ? ' (제거됨)' : purifyEnabled ? ' (순화됨)' : mosaicEnabled ? ' (모자이크 처리됨)' : ''}
             </p>
+            <p>민감도 레벨: {sensitivityLevel}</p>
           </div>
         </div>
       )}

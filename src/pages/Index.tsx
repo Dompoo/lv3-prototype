@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import BrowserFrame from '@/components/BrowserFrame';
-import ContentFilterControls from '@/components/ContentFilterControls';
+import ContentFilterControls, { SensitivityLevel } from '@/components/ContentFilterControls';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 
 const Index = () => {
-  const [mosaicEnabled, setMosaicEnabled] = useState(false);
+  const [filterEnabled, setFilterEnabled] = useState(false);
+  const [mosaicEnabled, setMosaicEnabled] = useState(true);
   const [removeEnabled, setRemoveEnabled] = useState(false);
+  const [purifyEnabled, setPurifyEnabled] = useState(false);
   const [showContentControls, setShowContentControls] = useState(false);
   const [contentFilterKeywords, setContentFilterKeywords] = useState<string[]>(['욕설', '논란', '19금']);
+  const [sensitivityLevel, setSensitivityLevel] = useState<SensitivityLevel>(2);
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -27,7 +30,14 @@ const Index = () => {
         {/* Browser Demo */}
         <div className="relative">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <BrowserFrame mosaicEnabled={mosaicEnabled} removeEnabled={removeEnabled} filterKeywords={contentFilterKeywords} />
+            <BrowserFrame 
+              filterEnabled={filterEnabled}
+              mosaicEnabled={mosaicEnabled} 
+              removeEnabled={removeEnabled}
+              purifyEnabled={purifyEnabled}
+              filterKeywords={contentFilterKeywords}
+              sensitivityLevel={sensitivityLevel}
+            />
           </div>
 
           {/* Control Buttons & Panels - 주소창 아래로 이동 */}
@@ -45,12 +55,18 @@ const Index = () => {
                 <div className="mt-2 w-[333px]">
                   <Card className="p-6 bg-white/95 backdrop-blur-md shadow-2xl border-2 border-white/20">
                     <ContentFilterControls
+                      filterEnabled={filterEnabled}
                       mosaicEnabled={mosaicEnabled}
                       removeEnabled={removeEnabled}
+                      purifyEnabled={purifyEnabled}
+                      onFilterToggle={setFilterEnabled}
                       onMosaicToggle={setMosaicEnabled}
                       onRemoveToggle={setRemoveEnabled}
+                      onPurifyToggle={setPurifyEnabled}
                       filterKeywords={contentFilterKeywords}
                       onFilterKeywordsChange={setContentFilterKeywords}
+                      sensitivityLevel={sensitivityLevel}
+                      onSensitivityLevelChange={setSensitivityLevel}
                     />
                   </Card>
                 </div>

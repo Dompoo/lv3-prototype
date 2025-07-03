@@ -2,17 +2,24 @@
 import React from 'react';
 import MockWebsite from './MockWebsite';
 import { Chrome, RefreshCw, ArrowLeft, ArrowRight, MoreHorizontal } from 'lucide-react';
+import { SensitivityLevel } from './ContentFilterControls';
 
 interface BrowserFrameProps {
+  filterEnabled: boolean;
   mosaicEnabled: boolean;
   removeEnabled: boolean;
+  purifyEnabled: boolean;
   filterKeywords?: string[];
+  sensitivityLevel?: SensitivityLevel;
 }
 
 const BrowserFrame: React.FC<BrowserFrameProps> = ({
+  filterEnabled,
   mosaicEnabled,
   removeEnabled,
+  purifyEnabled,
   filterKeywords = [],
+  sensitivityLevel = 2,
 }) => {
   return (
     <div className="bg-gray-100">
@@ -41,9 +48,12 @@ const BrowserFrame: React.FC<BrowserFrameProps> = ({
       {/* Website Content */}
       <div className="bg-white min-h-[600px]">
         <MockWebsite
+          filterEnabled={filterEnabled}
           mosaicEnabled={mosaicEnabled}
           removeEnabled={removeEnabled}
+          purifyEnabled={purifyEnabled}
           filterKeywords={filterKeywords}
+          sensitivityLevel={sensitivityLevel}
         />
       </div>
     </div>
