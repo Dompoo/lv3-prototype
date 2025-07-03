@@ -89,6 +89,9 @@ function setupEventListeners() {
     }
   });
 
+  // 키워드 입력 실시간 업데이트
+  keywordInput.addEventListener('input', updateAddKeywordButton);
+
   // 민감도 레벨 선택
   sensitivityLevels.forEach(level => {
     level.addEventListener('click', async () => {
@@ -195,13 +198,6 @@ function getModeText(mode) {
 // 키워드 제거 함수를 전역으로 노출
 window.removeKeyword = removeKeyword;
 
-// 키워드 입력 실시간 업데이트
-document.addEventListener('DOMContentLoaded', () => {
-  const keywordInput = document.getElementById('keywordInput');
-  if (keywordInput) {
-    keywordInput.addEventListener('input', updateAddKeywordButton);
-  }
-});
 
 // 스타일 추가 - hidden 클래스
 const style = document.createElement('style');

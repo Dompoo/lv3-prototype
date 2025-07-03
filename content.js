@@ -18,10 +18,9 @@ const POST_SELECTORS = {
   // 갤러리 목록 페이지
   galleryList: {
     container: '.gall_list',
-    postRows: '.gall_list tbody tr:not(.notice):not(.tb_notice)',
-    postTitle: '.gall_tit ub-word',
-    postTitleLink: '.gall_tit ub-word a',
-    postAuthor: '.gall_writer .nickname',
+    postRows: '.gall_list .us-post[data-no]', // 'data-no' 속성이 있는 게시물 행만 선택
+    postTitle: '.gall_tit a', // 제목은 <a> 태그 안에 있음
+    postAuthor: '.gall_writer .nickname', // 작성자 닉네임
     postDate: '.gall_date',
     postViews: '.gall_count',
     postComments: '.gall_reply'
@@ -48,41 +47,8 @@ const POST_SELECTORS = {
   // 공통 선택자
   common: {
     postId: function(element) {
-      // 게시물 ID 추출 (여러 방법 시도)
-      
-      // 1. 링크 href에서 추출
-      const link = element.querySelector('a[href*="no="]');
-      if (link && link.href) {
-        const match = link.href.match(/no=(\d+)/);
-        if (match) return parseInt(match[1]);
-      }
-      
-      // 2. data 속성에서 추출
-      const dataNo = element.getAttribute('data-no');
-      if (dataNo) return parseInt(dataNo);
-      
-      // 3. onclick 이벤트에서 추출
-      const onclick = element.getAttribute('onclick');
-      if (onclick) {
-        const match = onclick.match(/no[=\s]*(\d+)/);
-        if (match) return parseInt(match[1]);
-      }
-      
-      // 4. 부모/자식 요소에서 찾기
-      const parent = element.closest('[data-no]');
-      if (parent) {
-        const parentNo = parent.getAttribute('data-no');
-        if (parentNo) return parseInt(parentNo);
-      }
-      
-      // 5. fallback: 요소의 순서 사용
-      const container = element.closest('.gall_list tbody') || element.closest('.cmt_list');
-      if (container) {
-        const items = container.querySelectorAll('tr, li');
-        return Array.from(items).indexOf(element) + 1;
-      }
-      
-      return Date.now() + Math.floor(Math.random() * 1000); // 최후 수단
+      // 게시물 ID 추출 (data-no 속성을 직접 사용)
+      return parseInt(element.dataset.no, 10);
     },
     
     // 현재 페이지 타입 감지
